@@ -1,7 +1,8 @@
 import postgres from 'postgres';
-import { DATABASE_URL } from './config';
+import dotenv from "dotenv";
+dotenv.config();
 
-const connectionString =DATABASE_URL;
+const connectionString =process.env.DATABASE_URL;
 
 const sql = postgres(connectionString, {
     ssl: 'require',

@@ -3,13 +3,14 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import router from './routes.js';
-import { CORS_ORIGIN, PORT } from './config.js';
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 
 app.use(cors({
-    origin: CORS_ORIGIN,
+    origin: process.env.CORS_ORIGIN,
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type']
 }));
@@ -19,7 +20,7 @@ app.use(express.json());
 // 2. Socket.io Setup - Use config
 const io = new Server(httpServer, {
     cors: {
-        origin: CORS_ORIGIN,
+        origin: process.env.CORS_ORIGIN,
         methods: ['GET', 'POST'],
     },
 });
@@ -46,6 +47,6 @@ io.on('connection', (socket) => {
 
 app.use('/', router);
 
-httpServer.listen(PORT, () => {
-    console.log(`🚀 API & Sockets listening on :${config.port}`);
+httpServer.listen(process.env.PORT, () => {
+    console.log(`🚀 API & Sockets listening on :${process.env.PORT}`);
 });

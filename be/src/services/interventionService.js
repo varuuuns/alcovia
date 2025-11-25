@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { query } from '../db.js';
-import { N8N_WEBHOOK_URL } from '../config.js';
+import dotenv from "dotenv";
+dotenv.config();
 
 export async function setStudentStatus(studentId, status) {
     await query('UPDATE students SET status = $1 WHERE id = $2', [status, studentId]);
@@ -33,7 +34,7 @@ export async function getPendingTask(studentId) {
 }
 
 export async function triggerN8N(payload) {
-    const url = N8N_WEBHOOK_URL;
+    const url = process.env.N8N_WEBHOOK_URL;
     if (!url) {
         console.warn('Skipping n8n: No Webhook URL configured');
         return;
