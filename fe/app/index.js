@@ -5,12 +5,9 @@ import {
 } from 'react-native';
 import io from 'socket.io-client';
 
-// ---------------------------------------------------------
 // CONFIGURATION
-// ---------------------------------------------------------
-// Replace with your Render/Railway backend URL
-const API_URL = 'https://YOUR-BACKEND-ON-RENDER.com';
-const STUDENT_ID = 1; // demo
+const API_URL = 'https://alcovia-615a.onrender.com';
+const STUDENT_ID = 8;
 
 export default function App() {
     const [status, setStatus] = useState('loading'); // 'on_track' | 'needs_intervention' | 'remedial'
@@ -56,7 +53,7 @@ export default function App() {
                 .catch(() => { });
         }, 60000);
 
-        // Cheater Detection (optional bonus)
+        // Cheater Detection
         const handleCheat = () => {
             fetch(`${API_URL}/daily-checkin`, {
                 method: 'POST',

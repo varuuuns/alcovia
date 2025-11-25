@@ -1,6 +1,7 @@
 import postgres from 'postgres';
+import { DATABASE_URL } from './config';
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString =DATABASE_URL;
 
 const sql = postgres(connectionString, {
     ssl: 'require',

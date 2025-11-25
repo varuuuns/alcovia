@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { z } from 'zod';
-// Note: Ensure this filename matches what you created (singular vs plural)
 import { setStudentStatus, createDailyLog, createIntervention, completeInterventions, getPendingTask, triggerN8N } from './services/interventionService.js';
 import { query } from './db.js';
 
@@ -59,24 +58,27 @@ const Assign = z.object({
 });
 
 router.post('/assign-intervention', async (req, res) => {
-    // FIX: Properly handle Zod result
-    const parse = Assign.safeParse(req.body);
-    if (!parse.success) return res.status(400).json({ error: parse.error.flatten() });
+    try {
+        const parse = Assign.safeParse(req.body);
+        if (!parse.success) return res.status(400).json({ error: parse.error.flatten() });
 
-    const { student_id, task } = parse.data;
+        const { student_id, task } = parse.data;
 
-    await createIntervention(student_id, task);
-    await setStudentStatus(student_id, 'remedial');
+        await createIntervention(student_id, task);
+        await setStudentStatus(student_id, 'remedial');
 
-    // Socket Emit
-    if (req.io) {
-        req.io.to(String(student_id)).emit('status_update', {
-            status: 'remedial',
-            task: task
-        });
+        // Socket Emit
+        if (req.io) {
+            req.io.to(String(student_id)).emit('status_update', {
+                status: 'remedial',
+                task: task
+            });
+        }
+
+        res.json({ message: 'Intervention assigned & Client Notified' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
-
-    res.json({ message: 'Intervention assigned & Client Notified' });
 });
 
 // 3. Mark Complete
@@ -86,23 +88,26 @@ const Complete = z.object({
 });
 
 router.post('/mark-complete', async (req, res) => {
-    // FIX: Properly handle Zod result
-    const parse = Complete.safeParse(req.body);
-    if (!parse.success) return res.status(400).json({ error: parse.error.flatten() });
+    try {
+        const parse = Complete.safeParse(req.body);
+        if (!parse.success) return res.status(400).json({ error: parse.error.flatten() });
 
-    const { student_id } = parse.data;
+        const { student_id } = parse.data;
 
-    await completeInterventions(student_id);
-    await setStudentStatus(student_id, 'on_track');
+        await completeInterventions(student_id);
+        await setStudentStatus(student_id, 'on_track');
 
-    if (req.io) {
-        req.io.to(String(student_id)).emit('status_update', {
-            status: 'on_track',
-            task: null
-        });
+        if (req.io) {
+            req.io.to(String(student_id)).emit('status_update', {
+                status: 'on_track',
+                task: null
+            });
+        }
+
+        res.json({ message: 'Returned to normal' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
-
-    res.json({ message: 'Returned to normal' });
 });
 
 // State Helper
