@@ -1,0 +1,226 @@
+{
+  "name": "Mentor Dispatcher Fail-Safe + Escalation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "student-failed",
+        "responseMode": "lastNode",
+        "responseData": "noData",
+        "options": {}
+      },
+      "name": "Student Failed Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        64
+      ],
+      "id": "b7f392e2-ac12-4d85-aace-0f49e52a4389",
+      "webhookId": "7699d519-83dd-4cc0-a24b-2190aed39db7",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "mentor@alcovia.com",
+        "toEmail": "vinaysarla777@gmail.com",
+        "subject": "=Student {{$json.body.student_id}} Failed - Action Required",
+        "emailFormat": "html",
+        "html": "=Student {{$json.body.student_id}} failed today's check.\nScore: {{$json.body.quiz_score}}\nFocus Minutes: {{$json.body.focus_minutes}}\n\nClick to assign task:\n{{$execution.resumeUrl}}?task=Read%20Chapter%204\n(This link expires in 12 hours.)",
+        "options": {}
+      },
+      "name": "Notify Mentor",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        96,
+        64
+      ],
+      "id": "f41e11d0-13e9-4aea-bbde-3a4980d5f91e",
+      "webhookId": "5a235c13-23c5-4602-bd89-c891797ff97a",
+      "alwaysOutputData": true,
+      "credentials": {
+        "smtp": {
+          "id": "B1kWOqbNyPzdC3GO",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "limitWaitTime": true,
+        "resumeAmount": 12,
+        "options": {
+          "noResponseBody": "=<p>✅ Mentor approval received. Student will be assigned a task shortly.</p>",
+          "webhookSuffix": "approve"
+        }
+      },
+      "name": "Wait for Mentor Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        336,
+        64
+      ],
+      "id": "12df2f44-19f9-4123-8d12-37166f1a8a71",
+      "webhookId": "fbefd5f7-6674-4dfd-9931-202630746701",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/assign-intervention",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "student_id",
+              "value": "={{ $('Student Failed Webhook').item.json.body.student_id }}"
+            },
+            {
+              "name": "task",
+              "value": "={{ $json.query.task || 'Read Chapter 4' }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "name": "Assign Task to Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        592,
+        64
+      ],
+      "id": "0c315ebe-f565-42aa-9912-c12900ea901e",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/assign-intervention",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "student_id",
+              "value": "={{ $('Student Failed Webhook').item.json.body.student_id }}"
+            },
+            {
+              "name": "task",
+              "value": "Auto-Unlock: Timeout Reached"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "name": "Auto-Unlock (Timeout)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        592,
+        256
+      ],
+      "id": "643cab0a-313f-4738-b72e-54587e575a4f",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@alcovia.com",
+        "toEmail": "headmentor@alcovia.com",
+        "subject": "Mentor Timeout - Student Auto-Unlocked",
+        "emailFormat": "html",
+        "html": "=Student {{$('Student Failed Webhook').item.json.body.student_id}} was auto-unlocked after 12 hours of no mentor response.\n",
+        "options": {}
+      },
+      "name": "Notify Head Mentor",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        848,
+        256
+      ],
+      "id": "094a0764-24cf-43c9-91c1-73387b0e8ab8",
+      "webhookId": "af5f1727-5a37-4e54-a8fe-766282e21276",
+      "alwaysOutputData": true,
+      "credentials": {
+        "smtp": {
+          "id": "B1kWOqbNyPzdC3GO",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Student Failed Webhook": {
+      "main": [
+        [
+          {
+            "node": "Notify Mentor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Mentor": {
+      "main": [
+        [
+          {
+            "node": "Wait for Mentor Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Mentor Approval": {
+      "main": [
+        [
+          {
+            "node": "Assign Task to Backend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Auto-Unlock (Timeout)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto-Unlock (Timeout)": {
+      "main": [
+        [
+          {
+            "node": "Notify Head Mentor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a6eff68d-88de-4dee-b4de-f6769e2de21a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e53f28c156a9e2d296a489abc001b6f43667f6fad3393771d282f75658c1b05a"
+  },
+  "id": "j0Nu5IiKOdDEej2H",
+  "tags": []
+}
