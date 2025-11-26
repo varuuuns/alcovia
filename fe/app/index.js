@@ -6,7 +6,7 @@ import {
 import io from 'socket.io-client';
 
 // CONFIGURATION
-const API_URL = 'https://alcovia-backend.onrender.com';
+const API_URL = 'https://alcovia-615a.onrender.com/';
 
 const STUDENT_ID = 10;
 
