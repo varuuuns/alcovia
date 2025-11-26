@@ -34,7 +34,9 @@ export default function App() {
         // B. Connect Real-Time Socket
         const socket = io(API_URL, {
             query: { student_id: STUDENT_ID },
-            transports: ['websocket']
+            transports: ['websocket'], // Force websocket
+            path: '/socket.io/',       // Default path, but being explicit helps
+            secure: true,              // Required for Render (HTTPS)
         });
 
         socket.on('connect', () => {
