@@ -10,19 +10,22 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: '*',
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
+    allowedHeaders: ['Content-Type'],
+    credentials: true
 }));
 
 app.use(express.json());
 
-// 2. Socket.io Setup - Use config
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.CORS_ORIGIN,
-        methods: ['GET', 'POST'],
+        origin: "*",
+        methods: ["GET", "POST"],
+        credentials: true
     },
+    transports: ['websocket', 'polling'], // Allow both to be safe
+    allowEIO3: true // Compatibility mode
 });
 
 // Middleware to inject io
@@ -33,20 +36,22 @@ app.use((req, _res, next) => {
 
 // Socket Logic
 io.on('connection', (socket) => {
+    console.log(`🔌 New Connection: ${socket.id}`);
+
     const studentId = socket.handshake.query.student_id;
 
     if (studentId) {
-        console.log(`🔌 Student ${studentId} connected via WebSocket`);
+        console.log(`👤 Student ${studentId} joined room ${studentId}`);
         socket.join(String(studentId));
     }
 
     socket.on('disconnect', () => {
-        if (studentId) console.log(`❌ Student ${studentId} disconnected`);
+        console.log(`❌ Disconnected: ${socket.id}`);
     });
 });
 
 app.use('/', router);
 
 httpServer.listen(process.env.PORT, () => {
-    console.log(`🚀 API & Sockets listening on :${process.env.PORT}`);
+    console.log(`🚀 Server running on port ${process.env.PORT}`);
 });
